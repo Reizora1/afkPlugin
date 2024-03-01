@@ -2,3 +2,7 @@ name: afkPlugin
 version: '${project.version}'
 main: me.reizora.dev.afkplugin.AfkPlugin
 api-version: '1.20'
+commands:
+  setspawn:
+    description: Set current location as spawn point.
+    usage: </command>
