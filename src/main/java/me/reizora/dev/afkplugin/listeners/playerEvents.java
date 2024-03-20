@@ -28,7 +28,8 @@ public class playerEvents implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        afkMonitor.playerMoved(event.getPlayer());
+        Player player = event.getPlayer();
+        afkMonitor.playerMoved(player);
     }
 
     @EventHandler

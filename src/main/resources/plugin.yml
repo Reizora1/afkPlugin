@@ -6,3 +6,9 @@ commands:
   setspawn:
     description: Set current location as spawn point.
     usage: </command>
+  setAFKTimer:
+    description: Set the afk timer for the server.
+    usage: </command>
+  getAFKTimer:
+    description: Get the current afk timer of the server.
+    usage: </command>
