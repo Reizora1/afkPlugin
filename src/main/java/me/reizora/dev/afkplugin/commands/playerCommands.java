@@ -17,35 +17,36 @@ public class playerCommands implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Player player = (Player) sender;
-        World world = player.getWorld();
+        if (sender instanceof Player player){
+            World world = player.getWorld();
 
-        if (command.getName().equalsIgnoreCase("setspawn")) {
-            Location getSpawn = player.getLocation();
-            playerSpawnLocations.put(player, getSpawn);
-            playerEvents.playerJoinLocation.remove(player);
+            if (command.getName().equalsIgnoreCase("setspawn")) {
+                Location getSpawn = player.getLocation();
+                playerSpawnLocations.put(player, getSpawn);
+                playerEvents.playerJoinLocation.remove(player);
 
-            world.setSpawnLocation(getPlayerSpawn(player));
-            player.sendMessage(ChatColor.GREEN+ "Spawn location set.");
-        }
-        else if (command.getName().equalsIgnoreCase("setAFKTimer")){
-            if (sender.hasPermission("admin")){
-                if (args.length != 1){
-                    sender.sendMessage(ChatColor.RED+ "Invalid command argument!");
-                    sender.sendMessage(ChatColor.GRAY+ "/setafktimer <seconds>.");
+                world.setSpawnLocation(getPlayerSpawn(player));
+                player.sendMessage(ChatColor.GREEN+ "Spawn location set.");
+            }
+            else if (command.getName().equalsIgnoreCase("setAFKTimer")){
+                if (sender.hasPermission("admin")){
+                    if (args.length != 1){
+                        sender.sendMessage(ChatColor.RED+ "Invalid command argument!");
+                        sender.sendMessage(ChatColor.GRAY+ "/setafktimer <seconds>.");
+                    }
+                    else {
+                        long afkTime = Long.parseLong(args[0]);
+                        afkMonitor.defaultAfkTimer = afkTime * 1000L;
+                        sender.sendMessage(ChatColor.GREEN+ "AFK timer has been updated to " +(afkTime+ " seconds."));
+                    }
                 }
-                else {
-                    long afkTime = Long.parseLong(args[0]);
-                    afkMonitor.defaultAfkTimer = afkTime * 1000L;
-                    sender.sendMessage(ChatColor.GREEN+ "AFK timer has been updated to " +(afkTime+ " seconds."));
+                else{
+                    sender.sendMessage(ChatColor.GRAY+ "You have no permission to execute that command!");
                 }
             }
-            else{
-                sender.sendMessage(ChatColor.GRAY+ "You have no permission to execute that command!");
+            else if (command.getName().equalsIgnoreCase("getAFKTimer")) {
+                sender.sendMessage(ChatColor.GRAY+ "AFK Timer is currently set to " +(afkMonitor.defaultAfkTimer/1000L)+ " seconds.");
             }
-        }
-        else if (command.getName().equalsIgnoreCase("getAFKTimer")) {
-            sender.sendMessage(ChatColor.GRAY+ "AFK Timer is currently set to " +(afkMonitor.defaultAfkTimer/1000L)+ " seconds.");
         }
 
         return true;

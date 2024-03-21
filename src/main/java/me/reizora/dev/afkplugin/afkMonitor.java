@@ -16,14 +16,16 @@ public class afkMonitor {
         this.plugin = plugin;
     }
     public static long defaultAfkTimer = 10000L;                                                                        // 1000L = 1sec.
-    public static long defaultRewardTimer = 10000L;
     private static final HashMap<Player, Long> lastRecordedMovement = new HashMap<>();                                  // HashMap to store player object as keys and the passed value; System.currentTimeMillis() as its value.
+    private static final HashMap<Player, Boolean> isPlayerAFK = new HashMap<>();
     private static final HashMap<Player, Long> lastRewardReleasedTime = new HashMap<>();
-    public static void playerJoined(Player player){                                                                     // Immediately fetches the system time upon playerJoin and store it in the lastRecordedMovement hashmap.
-        lastRecordedMovement.put(player, System.currentTimeMillis());
-        lastRewardReleasedTime.put(player, System.currentTimeMillis());
+    public static void playerJoined(Player player){
+        lastRecordedMovement.put(player, System.currentTimeMillis());                                                   // Immediately fetches the system time upon playerJoin and store it in the lastRecordedMovement hashmap.
+        lastRewardReleasedTime.put(player, System.currentTimeMillis());                                                 // Initializes the hashmap for the periodic rewards every x interval in AFK status.
+        isPlayerAFK.put(player, false);
     }
-    public static void playerLeft(Player player){ // Removes an instance of a players movement data from the hashmap.
+    public static void playerLeft(Player player){                                                                       // Removes an instance of a players data from the hashmaps.
+        isPlayerAFK.remove(player);
         lastRecordedMovement.remove(player);
         lastRewardReleasedTime.remove(player);
         playerCommands.playerSpawnLocations.remove(player);
@@ -31,14 +33,13 @@ public class afkMonitor {
         playerEvents.playerJoinLocation.remove(player);
     }
     public static void playerMoved(Player player){                                                                      // Called in the onPlayerMove() in the playerEvents.java. It is the logic for determining whenever a player gets out of an AFK status.
-        boolean wasAFK = System.currentTimeMillis() - lastRecordedMovement.get(player) >= defaultAfkTimer;              // When the player moves, this gets the currentTimeMillis from the system and compares it--
-        // with the data that is last recorded from the lastRecordedMovement hashmap.
-        if (wasAFK){
+        if (isPlayerAFK.get(player)){
             player.sendMessage(ChatColor.GREEN+ "You are no longer AFK!");
-            teleportToLastLocation(player);                                                                             // When the player moves, this method is called to return the player to its last recorded position before going afk.
+            isPlayerAFK.put(player, false);
+            teleportToLastLocation(player);
         }
         lastRecordedMovement.put(player, System.currentTimeMillis());                                                   // THE UPDATE LINE. This updates the lastRecordedMovement hashmap to store the new currentTimeMillis from the system when the player moves.
-        // The update is necessary for the wasAFK variable to evaluate to either true or false.
+                                                                                                                        // The update is necessary for the wasAFK variable to evaluate to either true or false.
     }
 
     public void startIdleCheckTask() {
@@ -46,19 +47,19 @@ public class afkMonitor {
             long currentTime = System.currentTimeMillis();
 
             for (Player player : Bukkit.getOnlinePlayers()) {
-                long lastMoveTime = lastRecordedMovement.getOrDefault(player, currentTime);
-                if (currentTime - lastMoveTime >= defaultAfkTimer) {
-                    teleportToSpawn(player);
-                    player.sendMessage("The player has been afk for " +(System.currentTimeMillis() - lastMoveTime) / 1000L +" seconds.");
+                long lastMoveTime = lastRecordedMovement.get(player);
 
+                if (currentTime - lastMoveTime >= defaultAfkTimer) {
+                    isPlayerAFK.put(player, true);
+                    player.sendMessage("The player has been afk for " +(System.currentTimeMillis() - lastMoveTime) / 1000L +" seconds.");
                     System.out.println("The player has been afk for " +(System.currentTimeMillis() - lastMoveTime) / 1000L +" seconds.");
-                    //System.out.println(defaultAfkTimer);
                 }
+                teleportToSpawn(player, isPlayerAFK.get(player));
             }
-        }, 0L, 20); // real-time checking of afk status in 1sec interval.
+        }, 0L, 20);                                                                                                // real-time checking of afk status in 1sec interval.
     }
 
-    private void teleportToSpawn(Player player) {
+    private void teleportToSpawn(Player player, Boolean isAFK) {
         long currentTime = System.currentTimeMillis();
         world = player.getWorld();
 
@@ -72,13 +73,13 @@ public class afkMonitor {
         Location playerLocation = player.getLocation();
         Location spawnLocation = world.getSpawnLocation();
 
-        if (!playerLocation.equals(spawnLocation)){
+        if (isAFK && !playerLocation.equals(spawnLocation)){
             player.teleport(spawnLocation);
-            lastRecordedMovement.put(player, System.currentTimeMillis());
+            lastRecordedMovement.put(player, System.currentTimeMillis()); //note of removal.
             player.sendMessage(ChatColor.YELLOW + "You have been automatically teleported to spawn due to inactivity.");
             player.sendMessage("You are now AFK!");
         }
-        else if (currentTime - lastRewardReleasedTime.get(player) >= defaultRewardTimer) {
+        else if (isAFK && currentTime - lastRewardReleasedTime.get(player) >= defaultAfkTimer) {
             player.getInventory().addItem(new ItemStack(Material.DIAMOND));
             player.sendMessage("You received a reward!");
             lastRewardReleasedTime.put(player, currentTime);
@@ -89,9 +90,7 @@ public class afkMonitor {
         world.setSpawnLocation(playerEvents.playerLastLocation.get(player));
         Location spawnLocation = world.getSpawnLocation();
 
-        if(spawnLocation != null){
-            player.teleport(spawnLocation);
-            player.sendMessage(ChatColor.YELLOW + "Returning to last recorded position...");
-        }
+        player.teleport(spawnLocation);
+        player.sendMessage(ChatColor.YELLOW + "Returning to last recorded position...");
     }
 }

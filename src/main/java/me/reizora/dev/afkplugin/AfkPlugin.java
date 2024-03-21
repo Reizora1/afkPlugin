@@ -13,6 +13,7 @@ public final class AfkPlugin extends JavaPlugin {
         afkMonitor afk = new afkMonitor(this);
 
         getServer().getPluginManager().registerEvents(player, this);
+
         getCommand("setspawn").setExecutor(new playerCommands());
         getCommand("setAFKTimer").setExecutor(new playerCommands());
         getCommand("getAFKTimer").setExecutor(new playerCommands());
